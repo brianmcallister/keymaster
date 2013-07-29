@@ -81,19 +81,18 @@
     }
     updateModifierKey(event);
 
-    // see if we need to ignore the keypress (filter() can can be overridden)
-    // by default ignore key presses if a select, textarea, or input is focused
-    if(!assignKey.filter.call(this, event)) return;
-
     // abort if no potentially matching shortcuts found
     if (!(key in _handlers)) return;
 
     // for each potential shortcut
     for (i = 0; i < _handlers[key].length; i++) {
       handler = _handlers[key][i];
+      
+      var force = handler.scope.split('.').pop() === 'force';
+      var originalScope = handler.scope.replace('.force', '');
 
       // see if it's in the current scope
-      if(handler.scope == scope || handler.scope == 'all'){
+      if(originalScope == scope || originalScope == 'all'){
         // check if modifiers match if any
         modifiersMatch = handler.mods.length > 0;
         for(k in _mods)
@@ -101,6 +100,12 @@
             (_mods[k] && index(handler.mods, +k) == -1)) modifiersMatch = false;
         // call the handler and stop the event if neccessary
         if((handler.mods.length == 0 && !_mods[16] && !_mods[18] && !_mods[17] && !_mods[91]) || modifiersMatch){
+          // see if we need to ignore the keypress (filter() can can be overridden)
+          // by default ignore key presses if a select, textarea, or input is focused
+          if (force === false) {
+            if(!assignKey.filter.call(this, event, handler)) return;
+          }
+          
           if(handler.method(event, handler)===false){
             if(event.preventDefault) event.preventDefault();
               else event.returnValue = false;
